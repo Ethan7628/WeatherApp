@@ -11,14 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Mobile Menu Toggle -->
-    <button class="mobile-menu-toggle" id="mobile-menu-toggle">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <!-- Sidebar Overlay for Mobile -->
-    <div class="sidebar-overlay" id="sidebar-overlay"></div>
-
     <div class="app-container">
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
@@ -59,7 +51,8 @@
                             <div class="current-weather-header">
                                 <div class="location-info">
                                     <h1 id="city-name">Madrid</h1>
-                                    <p id="weather-desc">Chance of rain 0%</p>
+                                    <div class="country" id="country-name">Spain</div>
+                                    <div class="weather-desc" id="weather-desc">Chance of rain 0%</div>
                                 </div>
                                 <div class="weather-icon-large">
                                     <img id="weather-icon" src="https://openweathermap.org/img/wn/01d@2x.png" alt="Weather icon">

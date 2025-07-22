@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchBtn = document.getElementById('search-btn');
     const locationBtn = document.getElementById('location-btn');
     const cityName = document.getElementById('city-name');
+    const countryName = document.getElementById('country-name');
     const currentTemp = document.getElementById('current-temp');
     const weatherIcon = document.getElementById('weather-icon');
     const weatherDesc = document.getElementById('weather-desc');
@@ -15,9 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const hourlyForecast = document.getElementById('hourly-forecast');
     
     // Navigation Elements
-    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebar-overlay');
     const navLinks = document.querySelectorAll('.nav-link');
     const contentSections = document.querySelectorAll('.content-section');
     const cityCards = document.querySelectorAll('.city-card');
@@ -56,17 +54,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Mobile menu
-        mobileMenuToggle.addEventListener('click', toggleMobileMenu);
-        sidebarOverlay.addEventListener('click', closeMobileMenu);
-        
         // Navigation
         navLinks.forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 const section = this.getAttribute('data-section');
                 switchSection(section);
-                closeMobileMenu();
             });
         });
         
@@ -76,7 +69,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const city = this.getAttribute('data-city');
                 fetchWeather(city);
                 switchSection('weather');
-                closeMobileMenu();
             });
         });
         
@@ -90,29 +82,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Handle window resize
         window.addEventListener('resize', handleResize);
-    }
-    
-    // Mobile Menu Functions
-    function toggleMobileMenu() {
-        sidebar.classList.toggle('active');
-        sidebarOverlay.classList.toggle('active');
-        mobileMenuToggle.classList.toggle('active');
-        
-        const icon = mobileMenuToggle.querySelector('i');
-        if (sidebar.classList.contains('active')) {
-            icon.className = 'fas fa-times';
-        } else {
-            icon.className = 'fas fa-bars';
-        }
-    }
-    
-    function closeMobileMenu() {
-        sidebar.classList.remove('active');
-        sidebarOverlay.classList.remove('active');
-        mobileMenuToggle.classList.remove('active');
-        
-        const icon = mobileMenuToggle.querySelector('i');
-        icon.className = 'fas fa-bars';
     }
     
     // Navigation Functions
@@ -220,6 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function displayCurrentWeather(data) {
         cityName.textContent = `${data.name}`;
+        countryName.textContent = data.sys.country;
         
         // Convert temperature based on settings
         const temp = settings.tempUnit === 'fahrenheit' ? 
