@@ -14,22 +14,127 @@ document.addEventListener('DOMContentLoaded', function() {
     const forecastDays = document.getElementById('forecast-days');
     const hourlyForecast = document.getElementById('hourly-forecast');
     
+    // Navigation Elements
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const contentSections = document.querySelectorAll('.content-section');
+    const cityCards = document.querySelectorAll('.city-card');
+    const toggleSwitches = document.querySelectorAll('.toggle-switch');
+    
     // API Key - Replace with your actual API key from OpenWeatherMap
     const apiKey = '0d79679dedff760c08254efb05ebfba8';
     
-    // Event Listeners
-    searchBtn.addEventListener('click', searchWeather);
-    locationBtn.addEventListener('click', getLocationWeather);
-    locationInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            searchWeather(); 
+    // Settings State
+    const settings = {
+        tempUnit: 'celsius', // celsius or fahrenheit
+        windUnit: 'kmh', // kmh or mph
+        timeFormat: '12h', // 12h or 24h
+        notifications: true,
+        locationServices: true,
+        darkMode: true
+    };
+    
+    // Initialize App
+    init();
+    
+    function init() {
+        setupEventListeners();
+        loadSettings();
+        fetchWeather('Madrid');
+        updateCityCards();
+    }
+    
+    function setupEventListeners() {
+        // Weather functionality
+        searchBtn.addEventListener('click', searchWeather);
+        locationBtn.addEventListener('click', getLocationWeather);
+        locationInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchWeather(); 
+            }
+        });
+        
+        // Mobile menu
+        mobileMenuToggle.addEventListener('click', toggleMobileMenu);
+        sidebarOverlay.addEventListener('click', closeMobileMenu);
+        
+        // Navigation
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const section = this.getAttribute('data-section');
+                switchSection(section);
+                closeMobileMenu();
+            });
+        });
+        
+        // City cards
+        cityCards.forEach(card => {
+            card.addEventListener('click', function() {
+                const city = this.getAttribute('data-city');
+                fetchWeather(city);
+                switchSection('weather');
+                closeMobileMenu();
+            });
+        });
+        
+        // Settings toggles
+        toggleSwitches.forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                this.classList.toggle('active');
+                updateSettings(this.id);
+            });
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', handleResize);
+    }
+    
+    // Mobile Menu Functions
+    function toggleMobileMenu() {
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+        mobileMenuToggle.classList.toggle('active');
+        
+        const icon = mobileMenuToggle.querySelector('i');
+        if (sidebar.classList.contains('active')) {
+            icon.className = 'fas fa-times';
+        } else {
+            icon.className = 'fas fa-bars';
         }
-    });
+    }
     
-    // Initial load - default city
-    fetchWeather('Madrid');
+    function closeMobileMenu() {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+        mobileMenuToggle.classList.remove('active');
+        
+        const icon = mobileMenuToggle.querySelector('i');
+        icon.className = 'fas fa-bars';
+    }
     
-    // Functions
+    // Navigation Functions
+    function switchSection(sectionName) {
+        // Update active nav link
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('data-section') === sectionName) {
+                link.classList.add('active');
+            }
+        });
+        
+        // Update active content section
+        contentSections.forEach(section => {
+            section.classList.remove('active');
+            if (section.id === sectionName + '-section') {
+                section.classList.add('active');
+            }
+        });
+    }
+    
+    // Weather Functions
     function searchWeather() {
         const location = locationInput.value.trim();
         if (location) {
@@ -115,7 +220,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function displayCurrentWeather(data) {
         cityName.textContent = `${data.name}`;
-        currentTemp.textContent = Math.round(data.main.temp);
+        
+        // Convert temperature based on settings
+        const temp = settings.tempUnit === 'fahrenheit' ? 
+            Math.round((data.main.temp * 9/5) + 32) : 
+            Math.round(data.main.temp);
+        const unit = settings.tempUnit === 'fahrenheit' ? '°F' : '°C';
+        
+        currentTemp.textContent = temp;
+        currentTemp.nextElementSibling.textContent = unit.charAt(1);
         
         // Calculate chance of rain based on weather conditions
         const rainChance = data.weather[0].main.toLowerCase().includes('rain') ? 
@@ -123,9 +236,21 @@ document.addEventListener('DOMContentLoaded', function() {
             Math.max(0, data.main.humidity - 70);
         
         weatherDesc.textContent = `Chance of rain ${Math.max(0, rainChance)}%`;
-        feelsLike.textContent = `${Math.round(data.main.feels_like)}°`;
+        
+        const feelsLikeTemp = settings.tempUnit === 'fahrenheit' ? 
+            Math.round((data.main.feels_like * 9/5) + 32) : 
+            Math.round(data.main.feels_like);
+        
+        feelsLike.textContent = `${feelsLikeTemp}${unit}`;
         humidity.textContent = `${rainChance}%`;
-        windSpeed.textContent = `${(data.wind.speed * 3.6).toFixed(1)} km/h`;
+        
+        // Convert wind speed based on settings
+        const windSpeedValue = settings.windUnit === 'mph' ? 
+            (data.wind.speed * 2.237).toFixed(1) : 
+            (data.wind.speed * 3.6).toFixed(1);
+        const windUnit = settings.windUnit === 'mph' ? 'mph' : 'km/h';
+        
+        windSpeed.textContent = `${windSpeedValue} ${windUnit}`;
         
         // Convert pressure to UV index approximation (simplified)
         const uvIndex = Math.min(11, Math.max(1, Math.round((data.main.pressure - 1000) / 10)));
@@ -145,17 +270,28 @@ document.addEventListener('DOMContentLoaded', function() {
         hourlyData.forEach(item => {
             const time = new Date(item.dt * 1000);
             const hour = time.getHours();
-            const timeStr = hour === 0 ? '12:00 AM' : 
+            
+            let timeStr;
+            if (settings.timeFormat === '24h') {
+                timeStr = `${hour.toString().padStart(2, '0')}:00`;
+            } else {
+                timeStr = hour === 0 ? '12:00 AM' : 
                           hour < 12 ? `${hour}:00 AM` : 
                           hour === 12 ? '12:00 PM' : 
                           `${hour - 12}:00 PM`;
+            }
+            
+            const temp = settings.tempUnit === 'fahrenheit' ? 
+                Math.round((item.main.temp * 9/5) + 32) : 
+                Math.round(item.main.temp);
+            const unit = settings.tempUnit === 'fahrenheit' ? '°F' : '°C';
             
             const hourlyItem = document.createElement('div');
             hourlyItem.className = 'hourly-item';
             hourlyItem.innerHTML = `
                 <div class="hourly-time">${timeStr}</div>
                 <img src="https://openweathermap.org/img/wn/${item.weather[0].icon}.png" alt="${item.weather[0].main}">
-                <div class="hourly-temp">${Math.round(item.main.temp)}°</div>
+                <div class="hourly-temp">${temp}${unit.charAt(1)}</div>
             `;
             
             hourlyForecast.appendChild(hourlyItem);
@@ -201,8 +337,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         forecastDates.forEach((dateStr, index) => {
             const dayData = dailyForecast[dateStr];
-            const maxTemp = Math.round(Math.max(...dayData.temps));
-            const minTemp = Math.round(Math.min(...dayData.temps));
+            
+            let maxTemp = Math.round(Math.max(...dayData.temps));
+            let minTemp = Math.round(Math.min(...dayData.temps));
+            
+            if (settings.tempUnit === 'fahrenheit') {
+                maxTemp = Math.round((maxTemp * 9/5) + 32);
+                minTemp = Math.round((minTemp * 9/5) + 32);
+            }
             
             // Get most frequent icon/description
             const iconCounts = {};
@@ -243,13 +385,97 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // City Cards Functions
+    function updateCityCards() {
+        const cities = [
+            { name: 'New York', temp: 22, desc: 'Partly Cloudy' },
+            { name: 'London', temp: 18, desc: 'Rainy' },
+            { name: 'Tokyo', temp: 26, desc: 'Sunny' },
+            { name: 'Paris', temp: 20, desc: 'Cloudy' },
+            { name: 'Sydney', temp: 24, desc: 'Clear' },
+            { name: 'Dubai', temp: 35, desc: 'Hot' }
+        ];
+        
+        cityCards.forEach((card, index) => {
+            if (cities[index]) {
+                const city = cities[index];
+                let temp = city.temp;
+                let unit = '°C';
+                
+                if (settings.tempUnit === 'fahrenheit') {
+                    temp = Math.round((temp * 9/5) + 32);
+                    unit = '°F';
+                }
+                
+                card.querySelector('.temp').textContent = `${temp}${unit}`;
+            }
+        });
+    }
+    
+    // Settings Functions
+    function updateSettings(toggleId) {
+        const toggle = document.getElementById(toggleId);
+        const isActive = toggle.classList.contains('active');
+        
+        switch(toggleId) {
+            case 'temp-toggle':
+                settings.tempUnit = isActive ? 'fahrenheit' : 'celsius';
+                break;
+            case 'wind-toggle':
+                settings.windUnit = isActive ? 'mph' : 'kmh';
+                break;
+            case 'time-toggle':
+                settings.timeFormat = isActive ? '24h' : '12h';
+                break;
+            case 'notification-toggle':
+                settings.notifications = isActive;
+                break;
+            case 'location-toggle':
+                settings.locationServices = isActive;
+                break;
+            case 'theme-toggle':
+                settings.darkMode = isActive;
+                break;
+        }
+        
+        saveSettings();
+        updateCityCards();
+        
+        // Refresh weather display if weather data exists
+        if (cityName.textContent !== 'Madrid' || currentTemp.textContent !== '31') {
+            // Re-fetch current weather to update units
+            const currentCity = cityName.textContent;
+            if (currentCity) {
+                fetchWeather(currentCity);
+            }
+        }
+    }
+    
+    function loadSettings() {
+        const savedSettings = localStorage.getItem('weatherAppSettings');
+        if (savedSettings) {
+            Object.assign(settings, JSON.parse(savedSettings));
+            
+            // Update toggle states
+            document.getElementById('temp-toggle').classList.toggle('active', settings.tempUnit === 'fahrenheit');
+            document.getElementById('wind-toggle').classList.toggle('active', settings.windUnit === 'mph');
+            document.getElementById('time-toggle').classList.toggle('active', settings.timeFormat === '24h');
+            document.getElementById('notification-toggle').classList.toggle('active', settings.notifications);
+            document.getElementById('location-toggle').classList.toggle('active', settings.locationServices);
+            document.getElementById('theme-toggle').classList.toggle('active', settings.darkMode);
+        }
+    }
+    
+    function saveSettings() {
+        localStorage.setItem('weatherAppSettings', JSON.stringify(settings));
+    }
+    
+    // Utility Functions
     function showLoading() {
-        // You can add a loading spinner here if needed
         console.log('Loading weather data...');
     }
     
     function hideLoading() {
-        // Hide loading spinner
         console.log('Weather data loaded');
     }
     
@@ -271,21 +497,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
     
-    // Add smooth scrolling for mobile
-    if (window.innerWidth <= 768) {
-        const forecastList = document.querySelector('.forecast-list');
-        if (forecastList) {
-            forecastList.style.scrollBehavior = 'smooth';
+    function handleResize() {
+        // Close mobile menu on resize to desktop
+        if (window.innerWidth > 768) {
+            closeMobileMenu();
         }
     }
     
-    // Handle window resize
-    window.addEventListener('resize', () => {
-        // Refresh layout on orientation change for mobile
-        if (window.innerWidth <= 768) {
-            setTimeout(() => {
-                window.scrollTo(0, 0);
-            }, 100);
+    // Handle escape key to close mobile menu
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeMobileMenu();
         }
     });
 });

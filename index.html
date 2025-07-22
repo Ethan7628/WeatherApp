@@ -11,9 +11,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
     <div class="app-container">
         <!-- Sidebar -->
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-icon">
                     <i class="fas fa-cloud-sun"></i>
@@ -23,97 +31,223 @@
             
             <nav>
                 <ul class="sidebar-nav">
-                    <li><a href="#" class="active"><i class="fas fa-cloud-sun"></i> Weather</a></li>
-                    <li><a href="#"><i class="fas fa-list"></i> Cities</a></li>
-                    <li><a href="#"><i class="fas fa-map"></i> Map</a></li>
-                    <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                    <li><a href="#" class="nav-link active" data-section="weather"><i class="fas fa-cloud-sun"></i> Weather</a></li>
+                    <li><a href="#" class="nav-link" data-section="cities"><i class="fas fa-list"></i> Cities</a></li>
+                    <li><a href="#" class="nav-link" data-section="map"><i class="fas fa-map"></i> Map</a></li>
+                    <li><a href="#" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Settings</a></li>
                 </ul>
             </nav>
         </div>
 
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Search Container -->
-            <div class="search-container">
-                <i class="fas fa-search" style="color: var(--text-muted);"></i>
-                <input type="text" id="location-input" placeholder="Search for cities">
-                <button id="search-btn"><i class="fas fa-search"></i></button>
-                <button id="location-btn"><i class="fas fa-location-arrow"></i></button>
-            </div>
+            <!-- Weather Section -->
+            <div class="content-section active" id="weather-section">
+                <!-- Search Container -->
+                <div class="search-container">
+                    <i class="fas fa-search" style="color: var(--text-muted);"></i>
+                    <input type="text" id="location-input" placeholder="Search for cities">
+                    <button id="search-btn"><i class="fas fa-search"></i></button>
+                    <button id="location-btn"><i class="fas fa-location-arrow"></i></button>
+                </div>
 
-            <!-- Weather Content -->
-            <div class="weather-content">
-                <!-- Current Weather -->
-                <div class="current-weather-section">
-                    <div class="current-weather-card">
-                        <div class="current-weather-header">
-                            <div class="location-info">
-                                <h1 id="city-name">Madrid</h1>
-                                <p id="weather-desc">Chance of rain 0%</p>
+                <!-- Weather Content -->
+                <div class="weather-content">
+                    <!-- Current Weather -->
+                    <div class="current-weather-section">
+                        <div class="current-weather-card">
+                            <div class="current-weather-header">
+                                <div class="location-info">
+                                    <h1 id="city-name">Madrid</h1>
+                                    <p id="weather-desc">Chance of rain 0%</p>
+                                </div>
+                                <div class="weather-icon-large">
+                                    <img id="weather-icon" src="https://openweathermap.org/img/wn/01d@2x.png" alt="Weather icon">
+                                </div>
                             </div>
-                            <div class="weather-icon-large">
-                                <img id="weather-icon" src="https://openweathermap.org/img/wn/01d@2x.png" alt="Weather icon">
+                            <div class="current-temp">
+                                <span id="current-temp">31</span><span class="unit">°</span>
                             </div>
                         </div>
-                        <div class="current-temp">
-                            <span id="current-temp">31</span><span class="unit">°</span>
+
+                        <!-- Today's Forecast -->
+                        <div class="todays-forecast">
+                            <h3>Today's Forecast</h3>
+                            <div class="hourly-forecast" id="hourly-forecast">
+                                <!-- Hourly items will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Air Conditions -->
+                        <div class="air-conditions">
+                            <div class="air-conditions-header">
+                                <h3>Air Conditions</h3>
+                                <button class="see-more">See more</button>
+                            </div>
+                            <div class="conditions-grid">
+                                <div class="condition-item">
+                                    <div class="condition-label">
+                                        <i class="fas fa-temperature-high"></i>
+                                        Real Feel
+                                    </div>
+                                    <div class="condition-value" id="feels-like">30°</div>
+                                </div>
+                                <div class="condition-item">
+                                    <div class="condition-label">
+                                        <i class="fas fa-wind"></i>
+                                        Wind
+                                    </div>
+                                    <div class="condition-value" id="wind-speed">0.2 km/h</div>
+                                </div>
+                                <div class="condition-item">
+                                    <div class="condition-label">
+                                        <i class="fas fa-tint"></i>
+                                        Chance of rain
+                                    </div>
+                                    <div class="condition-value" id="humidity">0%</div>
+                                </div>
+                                <div class="condition-item">
+                                    <div class="condition-label">
+                                        <i class="fas fa-sun"></i>
+                                        UV Index
+                                    </div>
+                                    <div class="condition-value" id="pressure">3</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Today's Forecast -->
-                    <div class="todays-forecast">
-                        <h3>Today's Forecast</h3>
-                        <div class="hourly-forecast" id="hourly-forecast">
-                            <!-- Hourly items will be populated by JavaScript -->
+                    <!-- 7-Day Forecast Sidebar -->
+                    <div class="forecast-sidebar">
+                        <div class="forecast-header">
+                            <h3>7-Day Forecast</h3>
                         </div>
-                    </div>
-
-                    <!-- Air Conditions -->
-                    <div class="air-conditions">
-                        <div class="air-conditions-header">
-                            <h3>Air Conditions</h3>
-                            <button class="see-more">See more</button>
-                        </div>
-                        <div class="conditions-grid">
-                            <div class="condition-item">
-                                <div class="condition-label">
-                                    <i class="fas fa-temperature-high"></i>
-                                    Real Feel
-                                </div>
-                                <div class="condition-value" id="feels-like">30°</div>
-                            </div>
-                            <div class="condition-item">
-                                <div class="condition-label">
-                                    <i class="fas fa-wind"></i>
-                                    Wind
-                                </div>
-                                <div class="condition-value" id="wind-speed">0.2 km/h</div>
-                            </div>
-                            <div class="condition-item">
-                                <div class="condition-label">
-                                    <i class="fas fa-tint"></i>
-                                    Chance of rain
-                                </div>
-                                <div class="condition-value" id="humidity">0%</div>
-                            </div>
-                            <div class="condition-item">
-                                <div class="condition-label">
-                                    <i class="fas fa-sun"></i>
-                                    UV Index
-                                </div>
-                                <div class="condition-value" id="pressure">3</div>
-                            </div>
+                        <div class="forecast-list" id="forecast-days">
+                            <!-- Forecast items will be populated by JavaScript -->
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- 7-Day Forecast Sidebar -->
-                <div class="forecast-sidebar">
-                    <div class="forecast-header">
-                        <h3>7-Day Forecast</h3>
+            <!-- Cities Section -->
+            <div class="content-section" id="cities-section">
+                <h2>Popular Cities</h2>
+                <p>Explore weather conditions in popular cities around the world.</p>
+                
+                <div class="cities-grid">
+                    <div class="city-card" data-city="New York">
+                        <h4>New York</h4>
+                        <div class="temp">22°C</div>
+                        <div class="desc">Partly Cloudy</div>
                     </div>
-                    <div class="forecast-list" id="forecast-days">
-                        <!-- Forecast items will be populated by JavaScript -->
+                    <div class="city-card" data-city="London">
+                        <h4>London</h4>
+                        <div class="temp">18°C</div>
+                        <div class="desc">Rainy</div>
+                    </div>
+                    <div class="city-card" data-city="Tokyo">
+                        <h4>Tokyo</h4>
+                        <div class="temp">26°C</div>
+                        <div class="desc">Sunny</div>
+                    </div>
+                    <div class="city-card" data-city="Paris">
+                        <h4>Paris</h4>
+                        <div class="temp">20°C</div>
+                        <div class="desc">Cloudy</div>
+                    </div>
+                    <div class="city-card" data-city="Sydney">
+                        <h4>Sydney</h4>
+                        <div class="temp">24°C</div>
+                        <div class="desc">Clear</div>
+                    </div>
+                    <div class="city-card" data-city="Dubai">
+                        <h4>Dubai</h4>
+                        <div class="temp">35°C</div>
+                        <div class="desc">Hot</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Section -->
+            <div class="content-section" id="map-section">
+                <h2>Weather Map</h2>
+                <p>Interactive weather map showing global weather patterns and conditions.</p>
+                
+                <div class="map-container">
+                    <div class="map-placeholder">
+                        <div>
+                            <i class="fas fa-map" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                            <p>Interactive Weather Map</p>
+                            <p style="font-size: 14px; opacity: 0.7;">Map integration coming soon</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div class="content-section" id="settings-section">
+                <h2>Settings</h2>
+                <p>Customize your weather app experience with these settings.</p>
+                
+                <div class="settings-grid">
+                    <div class="setting-card">
+                        <h4>Temperature Unit</h4>
+                        <p>Choose between Celsius and Fahrenheit for temperature display.</p>
+                        <div class="setting-toggle">
+                            <span>°C</span>
+                            <div class="toggle-switch" id="temp-toggle"></div>
+                            <span>°F</span>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-card">
+                        <h4>Wind Speed Unit</h4>
+                        <p>Select your preferred unit for wind speed measurements.</p>
+                        <div class="setting-toggle">
+                            <span>km/h</span>
+                            <div class="toggle-switch" id="wind-toggle"></div>
+                            <span>mph</span>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-card">
+                        <h4>24-Hour Format</h4>
+                        <p>Enable 24-hour time format for weather forecasts.</p>
+                        <div class="setting-toggle">
+                            <span>12h</span>
+                            <div class="toggle-switch" id="time-toggle"></div>
+                            <span>24h</span>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-card">
+                        <h4>Notifications</h4>
+                        <p>Receive weather alerts and daily forecast notifications.</p>
+                        <div class="setting-toggle">
+                            <span>Off</span>
+                            <div class="toggle-switch active" id="notification-toggle"></div>
+                            <span>On</span>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-card">
+                        <h4>Location Services</h4>
+                        <p>Allow the app to access your location for local weather.</p>
+                        <div class="setting-toggle">
+                            <span>Off</span>
+                            <div class="toggle-switch active" id="location-toggle"></div>
+                            <span>On</span>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-card">
+                        <h4>Dark Mode</h4>
+                        <p>Switch between light and dark theme for the app interface.</p>
+                        <div class="setting-toggle">
+                            <span>Light</span>
+                            <div class="toggle-switch active" id="theme-toggle"></div>
+                            <span>Dark</span>
+                        </div>
                     </div>
                 </div>
             </div>
