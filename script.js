@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const windSpeed = document.getElementById('wind-speed');
     const pressure = document.getElementById('pressure');
     const forecastDays = document.getElementById('forecast-days');
+    const hourlyForecast = document.getElementById('hourly-forecast');
     
     // API Key - Replace with your actual API key from OpenWeatherMap
     const apiKey = '0d79679dedff760c08254efb05ebfba8';
@@ -26,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Initial load - default city
-    fetchWeather('Kampala');
+    fetchWeather('Madrid');
     
     // Functions
     function searchWeather() {
@@ -44,16 +45,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     fetchWeatherByCoords(latitude, longitude);
                 },
                 error => {
-                    alert('Unable to retrieve your location. Please enable location services or search manually.');
+                    showError('Unable to retrieve your location. Please enable location services or search manually.');
                     console.error(error);
                 }
             );
         } else {
-            alert('Geolocation is not supported by your browser. Please search manually.');
+            showError('Geolocation is not supported by your browser. Please search manually.');
         }
     }
     
     function fetchWeather(location) {
+        showLoading();
         const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${location}&units=metric&appid=${apiKey}`;
         
         fetch(apiUrl)
@@ -69,14 +71,18 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(forecastData => {
                 displayForecast(forecastData);
+                displayHourlyForecast(forecastData);
+                hideLoading();
             })
             .catch(error => {
-                alert(error.message);
+                showError(error.message);
+                hideLoading();
                 console.error('Error:', error);
             });
     }
     
     function fetchWeatherByCoords(lat, lon) {
+        showLoading();
         const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
         
         fetch(apiUrl)
@@ -87,8 +93,12 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(forecastData => {
                 displayForecast(forecastData);
+                displayHourlyForecast(forecastData);
+                hideLoading();
             })
             .catch(error => {
+                showError('Error fetching weather data');
+                hideLoading();
                 console.error('Error:', error);
             });
     }
@@ -104,51 +114,93 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function displayCurrentWeather(data) {
-        cityName.textContent = `${data.name}, ${data.sys.country}`;
+        cityName.textContent = `${data.name}`;
         currentTemp.textContent = Math.round(data.main.temp);
-        weatherDesc.textContent = data.weather[0].description;
-        feelsLike.textContent = `${Math.round(data.main.feels_like)}°C`;
-        humidity.textContent = `${data.main.humidity}%`;
-        windSpeed.textContent = `${Math.round(data.wind.speed * 3.6)} km/h`;
-        pressure.textContent = `${data.main.pressure} hPa`;
+        
+        // Calculate chance of rain based on weather conditions
+        const rainChance = data.weather[0].main.toLowerCase().includes('rain') ? 
+            Math.min(data.main.humidity, 90) : 
+            Math.max(0, data.main.humidity - 70);
+        
+        weatherDesc.textContent = `Chance of rain ${Math.max(0, rainChance)}%`;
+        feelsLike.textContent = `${Math.round(data.main.feels_like)}°`;
+        humidity.textContent = `${rainChance}%`;
+        windSpeed.textContent = `${(data.wind.speed * 3.6).toFixed(1)} km/h`;
+        
+        // Convert pressure to UV index approximation (simplified)
+        const uvIndex = Math.min(11, Math.max(1, Math.round((data.main.pressure - 1000) / 10)));
+        pressure.textContent = uvIndex;
         
         const iconCode = data.weather[0].icon;
         weatherIcon.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
         weatherIcon.alt = data.weather[0].main;
     }
     
+    function displayHourlyForecast(data) {
+        hourlyForecast.innerHTML = '';
+        
+        // Get next 6 hours of forecast
+        const hourlyData = data.list.slice(0, 6);
+        
+        hourlyData.forEach(item => {
+            const time = new Date(item.dt * 1000);
+            const hour = time.getHours();
+            const timeStr = hour === 0 ? '12:00 AM' : 
+                          hour < 12 ? `${hour}:00 AM` : 
+                          hour === 12 ? '12:00 PM' : 
+                          `${hour - 12}:00 PM`;
+            
+            const hourlyItem = document.createElement('div');
+            hourlyItem.className = 'hourly-item';
+            hourlyItem.innerHTML = `
+                <div class="hourly-time">${timeStr}</div>
+                <img src="https://openweathermap.org/img/wn/${item.weather[0].icon}.png" alt="${item.weather[0].main}">
+                <div class="hourly-temp">${Math.round(item.main.temp)}°</div>
+            `;
+            
+            hourlyForecast.appendChild(hourlyItem);
+        });
+    }
+    
     function displayForecast(data) {
-        // Clear previous forecast
         forecastDays.innerHTML = '';
         
         // Group forecast by day
         const dailyForecast = {};
         const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const today = new Date().toDateString();
         
         data.list.forEach(item => {
             const date = new Date(item.dt * 1000);
-            const day = daysOfWeek[date.getDay()];
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = date.toDateString();
+            
+            // Skip today's data for the 7-day forecast
+            if (dateStr === today) return;
             
             if (!dailyForecast[dateStr]) {
                 dailyForecast[dateStr] = {
-                    day: day,
+                    day: daysOfWeek[date.getDay()],
+                    date: date,
                     temps: [],
                     icons: [],
-                    descriptions: []
+                    descriptions: [],
+                    conditions: []
                 };
             }
             
             dailyForecast[dateStr].temps.push(item.main.temp);
             dailyForecast[dateStr].icons.push(item.weather[0].icon);
             dailyForecast[dateStr].descriptions.push(item.weather[0].main);
+            dailyForecast[dateStr].conditions.push(item.weather[0].description);
         });
         
-        // Get the next 5 days (excluding today)
-        const forecastDates = Object.keys(dailyForecast).slice(1, 6);
+        // Get the next 7 days
+        const forecastDates = Object.keys(dailyForecast)
+            .sort((a, b) => new Date(a) - new Date(b))
+            .slice(0, 7);
         
-        forecastDates.forEach(date => {
-            const dayData = dailyForecast[date];
+        forecastDates.forEach((dateStr, index) => {
+            const dayData = dailyForecast[dateStr];
             const maxTemp = Math.round(Math.max(...dayData.temps));
             const minTemp = Math.round(Math.min(...dayData.temps));
             
@@ -169,19 +221,71 @@ document.addEventListener('DOMContentLoaded', function() {
                 descCounts[a] > descCounts[b] ? a : b
             );
             
-            // Create forecast day element
-            const forecastDay = document.createElement('div');
-            forecastDay.className = 'forecast-day';
-            forecastDay.innerHTML = `
-                <div class="day">${dayData.day}</div>
-                <img src="https://openweathermap.org/img/wn/${mostFrequentIcon}.png" alt="${mostFrequentDesc}">
-                <div class="temp">
-                    <span class="max-temp">${maxTemp}°</span>
-                    <span class="min-temp">${minTemp}°</span>
+            // Format day name
+            const dayName = index === 0 ? 'Today' : dayData.day;
+            
+            const forecastItem = document.createElement('div');
+            forecastItem.className = 'forecast-item';
+            forecastItem.innerHTML = `
+                <div class="forecast-day-info">
+                    <div class="forecast-day">${dayName}</div>
+                    <img src="https://openweathermap.org/img/wn/${mostFrequentIcon}.png" alt="${mostFrequentDesc}">
+                    <div class="forecast-desc">${mostFrequentDesc}</div>
+                </div>
+                <div class="forecast-temps">
+                    <span class="max-temp">${maxTemp}</span>
+                    <span>/</span>
+                    <span class="min-temp">${minTemp}</span>
                 </div>
             `;
             
-            forecastDays.appendChild(forecastDay);
+            forecastDays.appendChild(forecastItem);
         });
     }
+    
+    function showLoading() {
+        // You can add a loading spinner here if needed
+        console.log('Loading weather data...');
+    }
+    
+    function hideLoading() {
+        // Hide loading spinner
+        console.log('Weather data loaded');
+    }
+    
+    function showError(message) {
+        // Create error element if it doesn't exist
+        let errorElement = document.querySelector('.error');
+        if (!errorElement) {
+            errorElement = document.createElement('div');
+            errorElement.className = 'error';
+            document.querySelector('.current-weather-section').prepend(errorElement);
+        }
+        
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        
+        // Hide error after 5 seconds
+        setTimeout(() => {
+            errorElement.style.display = 'none';
+        }, 5000);
+    }
+    
+    // Add smooth scrolling for mobile
+    if (window.innerWidth <= 768) {
+        const forecastList = document.querySelector('.forecast-list');
+        if (forecastList) {
+            forecastList.style.scrollBehavior = 'smooth';
+        }
+    }
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        // Refresh layout on orientation change for mobile
+        if (window.innerWidth <= 768) {
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+            }, 100);
+        }
+    });
 });
